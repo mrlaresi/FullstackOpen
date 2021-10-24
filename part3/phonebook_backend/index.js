@@ -9,6 +9,7 @@ morgan.token('person', (req) => {
 
 app.use(express.json())
 app.use(cors())
+app.use(express.static('build'))
 
 // Logs only POST requests
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :person', {
