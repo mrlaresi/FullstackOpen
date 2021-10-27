@@ -51,6 +51,10 @@ const App = () => {
         setNewNumber('')
         changeError(`Added ${person.name}`, false)
       })
+      .catch(error => {
+        console.log(error.response.data)
+        changeError(error.response.data.err, true)
+      })
   }
 
   const modifyNumber = (person) => {
