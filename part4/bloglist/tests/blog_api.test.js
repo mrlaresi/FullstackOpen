@@ -1,7 +1,9 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const bcrypt = require('bcrypt')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
 const api = supertest(app)
 
@@ -33,13 +35,38 @@ describe('getting blogs', () => {
 })
 
 describe('modifying blogs', () => {
+	let userToken = null
+	beforeAll(async () => {
+		await User.deleteMany({})
+		const user = helper.initialUsers[0]
+		const passwordHash = await bcrypt.hash(user.password, 10)
+		let userObject = new User({
+			username: user.username,
+			name: user.name,
+			passwordHash
+		})
+		await userObject.save()
+
+		const response = await api
+			.post('/api/login')
+			.send({
+				username: user.username,
+				password: user.password
+			})
+		userToken = response.body.token
+	})
+
 	test('adding blogs works', async () => {
+		const usersInDb = await helper.usersInDb()
+		const addingUser = usersInDb[0]
 		await api
 			.post('/api/blogs')
+			.set('Authorization', `Bearer ${userToken}`)
 			.send({
 				author: 'Teppo Tulppu',
 				title: 'jones',
-				url: 'eiankalle.fi'
+				url: 'eiankalle.fi',
+				userId: addingUser.id
 			})
 			.expect(201)
 			.expect('Content-Type', /application\/json/)
@@ -52,12 +79,16 @@ describe('modifying blogs', () => {
 	})
 
 	test('likes default to 0 if not given', async () => {
+		const usersInDb = await helper.usersInDb()
+		const addingUser = usersInDb[0]
 		await api
 			.post('/api/blogs')
+			.set('Authorization', `Bearer ${userToken}`)
 			.send({
 				author: 'Teppo Tulppu',
 				title: 'jones',
-				url: 'eiankalle.fi'
+				url: 'eiankalle.fi',
+				userId: addingUser.id
 			})
 			.expect(201)
 			.expect('Content-Type', /application\/json/)
@@ -67,21 +98,38 @@ describe('modifying blogs', () => {
 	})
 
 	test('bad request if required values not given', async () => {
-		const empty = new Blog({
-			likes: 2
-		})
+		const usersInDb = await helper.usersInDb()
+		const addingUser = usersInDb[0]
 		await api
 			.post('/api/blogs')
-			.send(empty)
+			.set('Authorization', `Bearer ${userToken}`)
+			.send({
+				likes: 2,
+				userId: addingUser.id
+			})
 			.expect(400)
 		const blogsAtEnd = await helper.blogsInDb()
 		expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
 	})
 
 	test('deleting works', async () => {
+		const usersInDb = await helper.usersInDb()
+		const addingUser = usersInDb[0]
+		await api
+			.post('/api/blogs')
+			.set('Authorization', `Bearer ${userToken}`)
+			.send({
+				author: 'Teppo Tulppu',
+				title: 'jones',
+				url: 'eiankalle.fi',
+				likes: 2,
+				userId: addingUser.id
+			})
+			.expect(201)
 		const blogsAtStart = await helper.blogsInDb()
 		await api
 			.delete(`/api/blogs/${blogsAtStart[blogsAtStart.length-1].id}`)
+			.set('Authorization', `Bearer ${userToken}`)
 			.expect(204)
 
 		const blogsAtEnd = await helper.blogsInDb()
@@ -92,6 +140,7 @@ describe('modifying blogs', () => {
 		const blogsAtStart = await helper.blogsInDb()
 		await api
 			.put(`/api/blogs/${blogsAtStart[blogsAtStart.length-1].id}`)
+			.set('Authorization', `Bearer ${userToken}`)
 			.send({ likes: 20 })
 			.expect(200)
 		const blogsAtEnd = await helper.blogsInDb()

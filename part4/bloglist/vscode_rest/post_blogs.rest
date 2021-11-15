@@ -1,9 +1,11 @@
 POST http://localhost:3003/api/blogs
 Content-Type: application/json
+Authorization: bearer 
 
 {
-    "title": "james",
-    "author": "Teppo Tulppu",
-    "url": "eiankalle.fi",
-    "likes": 8
+    "title": "Karhukoplan Kommervenkit",
+    "author": "Karhukopla",
+    "url": "kkopla.fi",
+    "likes": 0,
+    "userId": "619038bb235e9ccbd3261dac"
 }
