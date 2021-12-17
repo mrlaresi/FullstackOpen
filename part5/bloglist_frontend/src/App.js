@@ -1,116 +1,130 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
-import Login from './components/Login'
+import LoginForm from './components/LoginForm'
 import Blogs from './components/Blogs'
-import BlogForm from './components/BlogForm'
 
 import blogService from './services/blogs'
 import loginService from './services/login'
 
 const App = () => {
-	const [blogs, setBlogs] = useState([])
-	const [username, setUsername] = useState("")
-	const [password, setPassword] = useState("")
-	const [user, setUser] = useState(null)
-	const [errorMessage, setError] = useState(null)
-	const [isError, setIsError] = useState(false)
+  const [blogs, setBlogs] = useState([])
+  const [user, setUser] = useState(null)
+  const [errorMessage, setError] = useState(null)
+  const [isError, setIsError] = useState(false)
 
-	const [title, setTitle] = useState("")
-	const [author, setAuthor] = useState("")
-	const [url, setUrl] = useState("")
+  const [createVisible, setCreateVisible] = useState(false)
 
-	useEffect(() => {
-		blogService.getAll().then(blogs =>
-			setBlogs(blogs)
-		)
-	}, [])
+  const blogFormRef = useRef()
 
-	useEffect(() => {
-		const blogAppUser = window.localStorage.getItem('blogAppUser')
-		if (blogAppUser) {
-			const user = JSON.parse(blogAppUser)
-			setUser(user)
-			blogService.setToken(user.token)
-		}
-	}, [])
 
-	const handleLogin = async event => {
-		event.preventDefault()
-		try {
-			const user = await loginService.login({
-				username, password
-			})
-			setUser(user)
-			setUsername("")
-			setPassword("")
-			window.localStorage.setItem("blogAppUser", JSON.stringify(user))
-			blogService.setToken(user.token)
-		} catch (exception) {
-			setError("Wrong username or password")
-			setIsError(true)
-			setTimeout(() => {
-				setError(null)
-			}, 5000)
-		}
-	}
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      const blogs = await blogService.getAll()
+      setBlogs(blogs.sort((first, second) => {
+        return second.likes - first.likes
+      }))
+    }
+    fetchBlogs()
+  }, [])
 
-	const handleLogout = () => {
-		setUser(null)
-		window.localStorage.removeItem('blogAppUser')
-	}
+  useEffect(() => {
+    const blogAppUser = window.localStorage.getItem('blogAppUser')
+    if (blogAppUser) {
+      const user = JSON.parse(blogAppUser)
+      setUser(user)
+      blogService.setToken(user.token)
+    }
+  }, [])
 
-	const handleCreate = async event => {
-		event.preventDefault()
-		try {
-			const blog = {
-				title: title,
-				author: author,
-				url: url
-			}
-			const response = await blogService.create(blog)
-			setBlogs(blogs.concat(response))
-			setError(`A new blog '${title}' by ${author} added`)
-			setIsError(false)
-			setTimeout(() => {
-				setError(null)
-			}, 5000)
-		} catch (exception) {
-			setError("Unable to post new blog")
-			setIsError(true)
-			setTimeout(() => {
-				setError(null)
-			}, 5000)
-		}
-	}
+  const handleLogin = async rawUser => {
+    try {
+      const user = await loginService.login(rawUser)
+      setUser(user)
+      window.localStorage.setItem('blogAppUser', JSON.stringify(user))
+      blogService.setToken(user.token)
+    } catch (exception) {
+      changeError('Wrong username or password', true)
+    }
+  }
 
-	if (user === null) {
-		return (
-			<div>
-				<Login handleLogin={handleLogin}
-				username={username}
-				setUsername={setUsername}
-				password={password}
-				setPassword={setPassword} 
-				message={errorMessage}
-				isError={isError} />
-			</div>
-		)
-	}
-	return (
-		<div>
-			<Blogs blogs={blogs} 
-				handleLogout={handleLogout} handleCreate={handleCreate}
-				user={user.name}
-				title={title} 
-				setTitle={setTitle} 
-				author={author}
-				setAuthor={setAuthor}
-				url={url}
-				setUrl={setUrl}
-				message={errorMessage}
-				isError={isError} />
-		</div>
-	)
+  const handleLogout = () => {
+    setUser(null)
+    window.localStorage.removeItem('blogAppUser')
+  }
+
+  const handleShowCreate = () => {
+    setCreateVisible(true)
+  }
+
+  const handleCreate = async rawBlog => {
+    try {
+      blogFormRef.current.toggleVisibility()
+      await blogService.create(rawBlog)
+      const newBlogs = await blogService.getAll()
+      setBlogs(newBlogs)
+      changeError(`A new blog '${rawBlog.title}' by ${rawBlog.author} added`, false)
+      setCreateVisible(false)
+    } catch (exception) {
+      changeError('Login timed out. Please login again.', true)
+      setUser(null)
+      window.localStorage.removeItem('blogAppUser')
+    }
+  }
+
+  const handleLike = async rawBlog => {
+    try {
+      const updated = { ...rawBlog, likes: rawBlog.likes += 1, user: rawBlog.user.id }
+      await blogService.update(updated)
+
+      const newBlogs = blogs.map(blog => blog.id !== rawBlog.id ? blog : { ...updated, user: rawBlog.user })
+      newBlogs.sort((first, second) => {
+        return second.likes - first.likes
+      })
+      setBlogs(newBlogs)
+    } catch (exception) {
+      changeError('Encountered an error whilst trying to add like.', true)
+    }
+  }
+
+  const handleDelete = async blog => {
+    try {
+      if (window.confirm(`Remove blog '${blog.title}' by ${blog.author}?`)) {
+        await blogService.remove(blog)
+        setBlogs(blogs.filter(element => element.id !== blog.id))
+      }
+    } catch (exception) {
+      console.log(exception)
+    }
+  }
+
+  const changeError = (message, bool) => {
+    setError(message)
+    setIsError(bool)
+    setTimeout(() => {
+      setError(null)
+    }, 5000)
+  }
+
+  if (user === null) {
+    return (
+      <LoginForm handleLogin={handleLogin}
+        message={errorMessage}
+        isError={isError} />
+    )
+  }
+  return (
+    <Blogs blogs={blogs}
+      handleLogout={handleLogout}
+      handleCreate={handleCreate}
+      handleShowCreate={handleShowCreate}
+      handleLike={handleLike}
+      handleDelete={handleDelete}
+      blogFormRef={blogFormRef}
+      user={user}
+      message={errorMessage}
+      isError={isError}
+      createVisible={createVisible} />
+  )
 }
 
 export default App

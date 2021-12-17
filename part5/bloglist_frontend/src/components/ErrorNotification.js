@@ -1,6 +1,6 @@
 import React from 'react'
 
-const ErrorNotification = ({message, isError}) => {
+const ErrorNotification = ({ message, isError }) => {
   if (!message) return null
   const base = {
     border: 'thick double',
@@ -15,7 +15,7 @@ const ErrorNotification = ({message, isError}) => {
   return (
     <p style={isError ? styleError : styleSuccess}>
       {message}
-    </p>   
+    </p>
   )
 }
 
