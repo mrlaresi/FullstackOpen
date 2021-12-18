@@ -20,7 +20,7 @@ const loginRouter = require('./controllers/login')
 * https://github.com/blakehaswell/mongoose-unique-validator/issues/131
 */
 mongoose.connect(config.MONGODB_URI,
-	{ useNewUrlParser: true, useUnifiedTopology: true })
+	{ useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false })
 	.then(() => {
 		logger.info('connected to MongoDB')
 	})
@@ -36,6 +36,13 @@ app.use(middleware.tokenExtractor)
 app.use('/api/blogs', middleware.userExtractor, blogRouter)
 app.use('/api/users', userRouter)
 app.use('/api/login', loginRouter)
+
+if (process.env.NODE_ENV === 'test') {
+	const testingRouter = require('./controllers/testing')
+	app.use('/api/testing', testingRouter)
+}
+
+app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
 
 
