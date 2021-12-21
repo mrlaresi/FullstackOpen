@@ -5,7 +5,7 @@ import Anecdote from './Anecdote'
 import Filter from './Filter'
 
 const AnecdoteList = () => {
-	const filter = useSelector(state => state.filters)
+	const filter = useSelector(state => state.filter)
 	const selectedAnecdotes = useSelector(state => state.anecdotes
 		.sort((first, second) => { return first.votes < second.votes }))
 	const filteredAnecdotes = filter !== ''

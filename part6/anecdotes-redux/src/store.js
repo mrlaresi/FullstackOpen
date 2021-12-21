@@ -8,8 +8,8 @@ import filterReducer from './reducers/filterReducer'
 
 const reducer = combineReducers({
 	anecdotes: anecdoteReducer,
-	notifications: notificationReducer,
-	filters: filterReducer
+	notification: notificationReducer,
+	filter: filterReducer
 })
 
 const store = createStore(
