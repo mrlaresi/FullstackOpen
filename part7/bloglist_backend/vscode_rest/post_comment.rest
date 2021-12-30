@@ -1,0 +1,7 @@
+POST http://localhost:3003/api/blogs/61902560e4e59cb175d8b2a2/comments
+Content-Type: application/json
+Authorization: bearer 
+
+{
+    "comment": "On kyllä aivan mahtava ja opettavainen blogi"
+}
