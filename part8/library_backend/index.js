@@ -120,7 +120,7 @@ const typeDefs = gql`
 	type Mutation {
 		editAuthor(
 			name: String!
-			setBornTo: ID!
+			setBornTo: Int!
 		): Author
 	}
 `
