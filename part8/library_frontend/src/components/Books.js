@@ -1,42 +1,30 @@
-import { useQuery } from '@apollo/client'
-import React from 'react'
-import { ALL_BOOKS } from '../queries'
+import React, { useState } from 'react'
+import BookTable from './BookTable'
 
 const Books = ({ show }) => {
-	const books = useQuery(ALL_BOOKS)
+	const [genre, setGenre] = useState('')
+	const [genres, setGenres] = useState([''])
+	const [genresSet, setBool] = useState(false)
 
 	if (!show) {
 		return null
 	}
 
-	return (
-		<div> {books.loading
-			? <p>Loading...</p>
-			: <>
-				<h2>books</h2>
+	const setGenreArray = (g) => {
+		setGenres(genres.concat(g))
+		setBool(true)
+	}
 
-				<table>
-					<tbody>
-						<tr>
-							<th></th>
-							<th>
-								author
-							</th>
-							<th>
-								published
-							</th>
-						</tr>
-						{books.data.allBooks.map(a =>
-							<tr key={a.title}>
-								<td>{a.title}</td>
-								<td>{a.author}</td>
-								<td>{a.published}</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			</>
-		}
+	return (
+		<div>
+			<h2>Books</h2>
+			<select value={genre} onChange={({ target }) => setGenre(target.value)}>
+				{genres.map(g =>
+					<option key={g} value={g}>{g}</option>
+				)}
+			</select>
+			<button value='' onClick={({ target }) => { setGenre(target.value) }}>Reset genres</button>
+			<BookTable genre={genre} setGenreArray={setGenreArray} genresSet={genresSet} />
 		</div>
 	)
 }

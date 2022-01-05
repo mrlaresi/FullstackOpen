@@ -29,23 +29,34 @@ const Authors = ({ show }) => {
 		setBorn('')
 	}
 
+	const sortAuthors = (authors) => {
+		return [...authors].sort((a, b) => {
+			const bookCount = b.bookCount - a.bookCount
+			if (bookCount !== 0)
+				return bookCount
+			if (a.name.toLowerCase() < b.name.toLowerCase()) return -1
+			if (a.name.toLowerCase() > b.name.toLowerCase()) return 1
+			return 0
+		})
+	}
+
 	return (
 		<div>{authors.loading
 			? <p>Loading...</p>
 			: <>
-				<h2>authors</h2>
+				<h2>Authors</h2>
 				<table>
 					<tbody>
 						<tr>
 							<th></th>
 							<th>
-								born
+								Born
 							</th>
 							<th>
-								books
+								Books
 							</th>
 						</tr>
-						{authors.data.allAuthors.map(a =>
+						{sortAuthors(authors.data.allAuthors).map(a =>
 							<tr key={a.name}>
 								<td>{a.name}</td>
 								<td>{a.born}</td>
@@ -56,9 +67,10 @@ const Authors = ({ show }) => {
 				</table>
 				<h2>Set birthyear</h2>
 				<form onSubmit={changeBorn}>
-					<select value={name} onChange={({ target }) => setName(target.value)}>{authors.data.allAuthors.map(a =>
-						<option key={a.name} value={a.name}>{a.name}</option>
-					)}
+					<select value={name} onChange={({ target }) => setName(target.value)}>
+						{authors.data.allAuthors.map(a =>
+							<option key={a.name} value={a.name}>{a.name}</option>
+						)}
 					</select>
 					<div>Born<input type='number' onChange={({ target }) => setBorn(target.value)}></input></div>
 					<button type='submit'>Update author</button>
